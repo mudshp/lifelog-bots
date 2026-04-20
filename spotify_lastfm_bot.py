@@ -165,8 +165,8 @@ def build_weekly_embed(tracks: list[dict], start: datetime, end: datetime) -> di
 # ------------------------------------------------------------
 def run_daily() -> None:
     now = datetime.now(JST)
-    yesterday = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    today = now
+    yesterday = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    today = yesterday + timedelta(days=1)
 
     tracks = fetch_recent_tracks(int(yesterday.timestamp()), int(today.timestamp()))
     embed = build_daily_embed(tracks, yesterday)
