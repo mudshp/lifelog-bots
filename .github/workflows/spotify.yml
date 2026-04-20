@@ -1,0 +1,53 @@
+name: Spotify Life Log
+
+on:
+  schedule:
+    # 毎朝 7:00 JST = 22:00 UTC (前日)
+    - cron: "0 22 * * *"
+    # 毎週月曜 7:05 JST = 日曜 22:05 UTC
+    - cron: "5 22 * * 0"
+  # 手動実行もできるように
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "daily or weekly"
+        required: true
+        default: "daily"
+        type: choice
+        options:
+          - daily
+          - weekly
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Determine mode
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "mode=${{ github.event.inputs.mode }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.schedule }}" = "5 22 * * 0" ]; then
+            echo "mode=weekly" >> $GITHUB_OUTPUT
+          else
+            echo "mode=daily" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run bot
+        env:
+          LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
+          LASTFM_USER: ${{ secrets.LASTFM_USER }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python spotify_lastfm_bot.py ${{ steps.mode.outputs.mode }}
